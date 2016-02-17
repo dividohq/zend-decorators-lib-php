@@ -1,53 +1,43 @@
 <?php
 /**
- * View helper definition
- *
- * @category Helpers
- * @package Twitter_Bootstrap_View
- * @subpackage Helper
- * @author Christian Soronellas <csoronellas@emagister.com>
+ * Abstract class for extension
  */
+require_once 'Zend/View/Helper/FormElement.php';
+
 
 /**
- * Helper to generate a set of radio button elements
+ * Helper to generate a "checkbox" element
  *
- * @category Helpers
- * @package Twitter_Bootstrap_View
+ * @category   Zend
+ * @package    Zend_View
  * @subpackage Helper
- * @author Christian Soronellas <csoronellas@emagister.com>
+ * @copyright  Copyright (c) 2005-2012 Zend Technologies USA Inc. (http://www.zend.com)
+ * @license    http://framework.zend.com/license/new-bsd     New BSD License
  */
 class Twitter_Bootstrap_View_Helper_FormRadio extends Zend_View_Helper_FormElement
 {
     /**
-     * Input type to use
-     * @var string
+     * Default checked/unchecked options
+     * @var array
      */
-    protected $_inputType = 'radio';
+    protected static $_defaultCheckedOptions = array(
+        'checkedValue'   => '1',
+        'uncheckedValue' => '0'
+    );
 
     /**
-     * Whether or not this element represents an array collection by default
-     * @var bool
-     */
-    protected $_isArray = false;
-
-    /**
-     * Generates a set of radio button elements.
+     * Generates a 'checkbox' element.
      *
      * @access public
      *
      * @param string|array $name If a string, the element name.  If an
      * array, all other parameters are ignored, and the array elements
      * are extracted in place of added parameters.
-     *
-     * @param mixed $value The radio value to mark as 'checked'.
-     *
-     * @param array $options An array of key-value pairs where the array
-     * key is the radio value, and the array value is the radio text.
-     *
-     * @param array|string $attribs Attributes added to each radio.
-     *
-     * @return string The radio buttons XHTML.
+     * @param mixed $value The element value.
+     * @param array $attribs Attributes for the element tag.
+     * @return string The element XHTML.
      */
+<<<<<<< HEAD:Twitter/Bootstrap/View/Helper/FormRadio.php
     public function formRadio($name, $value = null, $attribs = null, $options = null, $listsep = '')
     {
         $info = $this->_getInfo($name, $value, $attribs, $options, $listsep);
@@ -70,103 +60,112 @@ class Twitter_Bootstrap_View_Helper_FormRadio extends Zend_View_Helper_FormEleme
                 $label_attribs[$tmp] = $val;
                 unset($attribs[$key]);
             }
+=======
+    public function formCheckbox($name, $value = null, $attribs = null, array $checkedOptions = null)
+    {
+        $info = $this->_getInfo($name, $value, $attribs);
+        extract($info); // name, id, value, attribs, options, listsep, disable
+
+        $checked = false;
+        if (isset($attribs['checked']) && $attribs['checked']) {
+            $checked = true;
+            unset($attribs['checked']);
+        } elseif (isset($attribs['checked'])) {
+            $checked = false;
+            unset($attribs['checked']);
+>>>>>>> formcheckbox:Twitter/Bootstrap/View/Helper/FormCheckbox.php
         }
 
-        if (!array_key_exists('class', $label_attribs)) {
-            $label_attribs['class'] = '';
+        if (array_key_exists('class', $attribs)) {
+            $attribs['class'] = '';
         }
 
-        $label_attribs['class'] = trim($label_attribs['class']);
+        $checkedOptions = self::determineCheckboxInfo($value, $checked, $checkedOptions);
 
-        $labelPlacement = 'append';
-        foreach ($label_attribs as $key => $val) {
-            switch (strtolower($key)) {
-                case 'placement':
-                    unset($label_attribs[$key]);
-                    $val = strtolower($val);
-                    if (in_array($val, array('prepend', 'append'))) {
-                        $labelPlacement = $val;
-                    }
-                    break;
-            }
+        // is the element disabled?
+        $disabled = '';
+        if ($disable) {
+            $disabled = ' disabled="disabled"';
         }
-
-        // the radio button values and labels
-        $options = (array) $options;
 
         // build the element
         $xhtml = '';
-        $list  = array();
-
-        // should the name affect an array collection?
-        $name = $this->view->escape($name);
-        if ($this->_isArray && ('[]' != substr($name, -2))) {
-            $name .= '[]';
+        if ((!$disable && !strstr($name, '[]'))
+            && (empty($attribs['disableHidden']) || !$attribs['disableHidden'])
+        ) {
+            $xhtml = $this->_hidden($name, $checkedOptions['uncheckedValue']);
         }
 
-        // ensure value is an array to allow matching multiple times
-        $value = (array) $value;
-
-        // XHTML or HTML end tag?
-        $endTag = ' />';
-        if (($this->view instanceof Zend_View_Abstract) && !$this->view->doctype()->isXhtml()) {
-            $endTag= '>';
+        if (array_key_exists('disableHidden', $attribs)) {
+            unset($attribs['disableHidden']);
         }
 
-        // Set up the filter - Alnum + hyphen + underscore
-        // require_once 'Zend/Filter/PregReplace.php';
-        $pattern = @preg_match('/\pL/u', 'a')
-            ? '/[^\p{L}\p{N}\-\_]/u'    // Unicode
-            : '/[^a-zA-Z0-9\-\_]/';     // No Unicode
-        $filter = new Zend_Filter_PregReplace($pattern, "");
-
-        // add radio buttons to the list.
-        foreach ($options as $opt_value => $opt_label) {
-
-            // Should the label be escaped?
-            if ($escape) {
-                $opt_label = $this->view->escape($opt_label);
-            }
-
-            // is it disabled?
-            $disabled = '';
-            if (true === $disable) {
-                $disabled = ' disabled="disabled"';
-            } elseif (is_array($disable) && in_array($opt_value, $disable)) {
-                $disabled = ' disabled="disabled"';
-            }
-
-            // is it checked?
-            $checked = '';
-            if (in_array($opt_value, $value)) {
-                $checked = ' checked="checked"';
-            }
-
-            // generate ID
-            $optId = $id . '-' . $filter->filter($opt_value);
-
-            // Wrap the radios in labels
-            $radio = '<div class="radio"><label'
-                    . $this->_htmlAttribs($label_attribs) . ' for="' . $optId . '">'
-                    . (('prepend' == $labelPlacement) ? $opt_label : '')
-                    . '<input type="' . $this->_inputType . '"'
-                    . ' name="' . $name . '"'
-                    . ' id="' . $optId . '"'
-                    . ' value="' . $this->view->escape($opt_value) . '"'
-                    . $checked
-                    . $disabled
-                    . $this->_htmlAttribs($attribs)
-                    . $endTag
-                    . (('append' == $labelPlacement) ? $opt_label : '')
-                    . '</label></div>';
-
-            // add to the array of radio buttons
-            $list[] = $radio;
-        }
-
-        // done!
-        $xhtml .= implode($listsep, $list);
+        $xhtml .= '<div class="checkbox"><label><input type="checkbox"'
+                . ' name="' . $this->view->escape($name) . '"'
+                . ' id="' . $this->view->escape($id) . '"'
+                . ' value="' . $this->view->escape($checkedOptions['checkedValue']) . '"'
+                . $checkedOptions['checkedString']
+                . $disabled
+                . $this->_htmlAttribs($attribs)
+                . $this->getClosingBracket().'</label></div>';
 
         return $xhtml;
+    }
+
+    /**
+     * Determine checkbox information
+     *
+     * @param  string $value
+     * @param  bool $checked
+     * @param  array|null $checkedOptions
+     * @return array
+     */
+    public static function determineCheckboxInfo($value, $checked, array $checkedOptions = null)
+    {
+        // Checked/unchecked values
+        $checkedValue   = null;
+        $uncheckedValue = null;
+        if (is_array($checkedOptions)) {
+            if (array_key_exists('checkedValue', $checkedOptions)) {
+                $checkedValue = (string) $checkedOptions['checkedValue'];
+                unset($checkedOptions['checkedValue']);
+            }
+            if (array_key_exists('uncheckedValue', $checkedOptions)) {
+                $uncheckedValue = (string) $checkedOptions['uncheckedValue'];
+                unset($checkedOptions['uncheckedValue']);
+            }
+            if (null === $checkedValue) {
+                $checkedValue = (string) array_shift($checkedOptions);
+            }
+            if (null === $uncheckedValue) {
+                $uncheckedValue = (string) array_shift($checkedOptions);
+            }
+        } elseif ($value !== null) {
+            $uncheckedValue = self::$_defaultCheckedOptions['uncheckedValue'];
+        } else {
+            $checkedValue   = self::$_defaultCheckedOptions['checkedValue'];
+            $uncheckedValue = self::$_defaultCheckedOptions['uncheckedValue'];
+        }
+
+        // is the element checked?
+        $checkedString = '';
+        if ($checked || ((string) $value === $checkedValue)) {
+            $checkedString = ' checked="checked"';
+            $checked = true;
+        } else {
+            $checked = false;
+        }
+
+        // Checked value should be value if no checked options provided
+        if ($checkedValue == null) {
+            $checkedValue = $value;
+        }
+
+        return array(
+            'checked'        => $checked,
+            'checkedString'  => $checkedString,
+            'checkedValue'   => $checkedValue,
+            'uncheckedValue' => $uncheckedValue,
+        );
     }
 }
