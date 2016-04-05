@@ -1,3 +1,7 @@
 vendor
 composer.phar
+<<<<<<< HEAD
 .DS_Store
+=======
+.DS_Store
+>>>>>>> e186810bfaf783deb59dbd9481c276814bed10d4
